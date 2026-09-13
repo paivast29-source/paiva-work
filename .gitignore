@@ -1,0 +1,30 @@
+# dependências — reinstaladas pelo npm install em cada build
+node_modules/
+
+# build — gerado pelo npm run build
+dist/
+
+# Vercel
+.vercel/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# variáveis de ambiente
+.env
+.env.local
+.env.*.local
+
+# lixo de sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# editores
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
