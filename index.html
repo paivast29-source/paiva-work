@@ -1529,7 +1529,7 @@ function semear(){
     ],
     usuarios:[
       {id:id(), nome:'Umberto Paiva', login:'umbertopaiva', senha:'1234', papel:'diretor', empresa_id:null},
-      {id:id(), nome:'Equipe HL',          login:'hl',          senha:'1234', papel:'admin', empresa_id:eHL},
+      {id:id(), nome:'Lucas Canassa',      login:'Lucas Canassa', senha:'1234', papel:'admin', empresa_id:eHL},
       {id:id(), nome:'Equipe Essencial',   login:'essencial',   senha:'1234', papel:'admin', empresa_id:eDecore},
       {id:id(), nome:'Equipe VOLL',        login:'voll',        senha:'1234', papel:'admin', empresa_id:eVoll},
       {id:id(), nome:'Equipe Consulfarma', login:'consulfarma', senha:'1234', papel:'admin', empresa_id:eConsul}
@@ -1542,9 +1542,12 @@ function semear(){
   /* Clientes e equipe de partida: a ficha so' mostra o que serve
      se tiver dado dentro. Os contatos batem com os negocios do CRM
      de proposito, para o casamento lead <-> funil aparecer. */
+  /* data de cadastro em degraus fixos, nao aleatoria: com Math.random
+     a ordem da lista mudava a cada carregamento da pagina. */
+  var passoReg = 0;
   function reg(empId, col, obj){
     obj.id = id(); obj.colecao = col; obj.empresa_id = empId;
-    obj.criado_em = Date.now() - Math.round(Math.random() * 30 + 3) * 86400000;
+    obj.criado_em = Date.now() - (3 + (passoReg++) * 2) * 86400000;
     d.registros.push(obj);
     return obj;
   }
@@ -1606,9 +1609,6 @@ function semear(){
       vencimento:l[4], pago:l[5], pago_em:l[5] === 'Sim' ? l[4] : '', forma:'Pix'});
   });
 
-  reg(eHL, 'clientes', {nome:'Ricardo Alves', email:'ricardo@email.com', telefone:'(62) 99730-1180',
-    origem:'Google', etiqueta:'Em negociação', responsavel:'Equipe HL',
-    o_que_quer:'Automatizar iluminação e cortinas de uma casa em construção, entrega prevista para março.'});
   reg(eVoll, 'clientes', {nome:'Juliana Prado', telefone:'(62) 99881-2043',
     origem:'Indicação', etiqueta:'Novo', responsavel:'Equipe VOLL',
     o_que_quer:'Quer voltar a fazer pilates depois de uma lesão no joelho. Pediu turma da manhã.'});
@@ -1644,12 +1644,10 @@ function semear(){
     ['Auto Center Praça',      'financeiro@acpraca.com',   4, 6800],
     ['Studio He Fit',          '(62) 99310-5527',          5, 3600]
   ];
-  AMOSTRAS[eHL] = [
-    ['Residência Alphaville',  '(62) 99730-1180',          0, 24500],
-    ['Apartamento Jardins',    'ricardo@email.com',        1, 12800],
-    ['Casa Aldeia do Vale',    '(62) 98111-4420',          2, 38900],
-    ['Cobertura Setor Bueno',  'marina@email.com',         4, 18500]
-  ];
+  /* A HL entra zerada de proposito: e' conta de cliente de verdade,
+     nao demonstracao. O funil, as etapas e os campos ficam — sao a
+     ferramenta. O que nao fica e' dado inventado. */
+  AMOSTRAS[eHL] = [];
   AMOSTRAS[eDecore] = [
     ['Apartamento 142 — Bueno','(62) 99612-3380',          0, 9800],
     ['Escritório Vila Rosa',   'contato@vilarosa.com.br',  2, 15200],
@@ -1671,7 +1669,7 @@ function semear(){
   ];
 
   var RESP = {};
-  RESP[eStudio] = 'Umberto Paiva'; RESP[eHL] = 'Equipe HL';
+  RESP[eStudio] = 'Umberto Paiva'; RESP[eHL] = 'Lucas Canassa';
   RESP[eDecore] = 'Equipe Essencial'; RESP[eVoll] = 'Equipe VOLL';
   RESP[eConsul] = 'Equipe Consulfarma';
 
@@ -1706,8 +1704,6 @@ function semear(){
   d.produtos.push(
     {id:id(), empresa_id:eStudio, nome:'Estruturação inicial', preco:0, ativo:true,
      extras:{tipo_de_contrato:'Recorrente', prazo_de_entrega_dias:60}},
-    {id:id(), empresa_id:eHL, nome:'Automação de iluminação — residência', preco:18500, ativo:true,
-     extras:{ambientes:8, prazo_de_instalacao_dias:15}},
     {id:id(), empresa_id:eDecore, nome:'Projeto de interiores — apartamento', preco:9800, ativo:true,
      extras:{ambientes:5, prazo_de_entrega_dias:45}},
     {id:id(), empresa_id:eVoll, nome:'Pilates solo — plano mensal', preco:320, ativo:true,
@@ -1719,7 +1715,7 @@ function semear(){
 }
 
 /* ---------- gravacao ---------- */
-var CHAVE = 'paivawork:dados:v4';
+var CHAVE = 'paivawork:dados:v5';
 
 /* localStorage primeiro (site normal); window.storage so' existe quando
    a pagina roda como Artifact. Os dois falham em silencio de proposito:
