@@ -921,29 +921,29 @@ td.link:hover{text-decoration:underline;}
         <div class="trio">
           <div class="kpi">
             <div class="marca-fundo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg></div>
-            <h4>Novos leads (dia)</h4>
-            <div class="valor">41</div>
-            <div class="nota" style="color:#8A93A6">
+            <h4>Novos leads (hoje)</h4>
+            <div class="valor" id="kpi-leads-dia">0</div>
+            <div class="nota" style="color:var(--tinta-3)">
               <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-              ATUALIZADO AGORA
+              ENTRARAM NO FUNIL HOJE
             </div>
           </div>
           <div class="kpi">
             <div class="marca-fundo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 5-5"/></svg></div>
-            <h4>Propostas fechadas (dia)</h4>
-            <div class="valor">10</div>
+            <h4>Negócios ganhos (hoje)</h4>
+            <div class="valor" id="kpi-ganhos-dia">0</div>
             <div class="nota">
               <svg viewBox="0 0 24 24"><path d="m3 17 6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg>
-              BATENDO META
+              CHEGARAM A UMA ETAPA DE GANHO
             </div>
           </div>
           <div class="kpi destaque">
             <div class="marca-fundo"><svg viewBox="0 0 24 24"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
-            <h4>Faturamento (dia)</h4>
-            <div class="valor">R$ 16.562,90</div>
+            <h4>Valor ganho (hoje)</h4>
+            <div class="valor" id="kpi-valor-dia">R$ 0,00</div>
             <div class="nota">
               <svg viewBox="0 0 24 24"><path d="M3 12h4l2 5 4-12 2 7h6"/></svg>
-              EM TEMPO REAL
+              SOMA DOS NEGÓCIOS GANHOS
             </div>
           </div>
         </div>
@@ -955,21 +955,21 @@ td.link:hover{text-decoration:underline;}
         <div class="trio">
           <div class="kpi escura">
             <div class="marca-fundo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg></div>
-            <h4>Total de leads (7d)</h4>
-            <div class="valor">1.407</div>
+            <h4>Novos leads (7d)</h4>
+            <div class="valor" id="kpi-leads-7d">0</div>
             <div class="nota">Últimos 7 dias corridos</div>
           </div>
           <div class="kpi escura">
             <div class="marca-fundo"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 5-5"/></svg></div>
-            <h4>Propostas fechadas (7d)</h4>
-            <div class="valor">717</div>
-            <div class="nota">Volume de conversão</div>
+            <h4>Negócios ganhos (7d)</h4>
+            <div class="valor" id="kpi-ganhos-7d">0</div>
+            <div class="nota" id="kpi-conv-7d">Últimos 7 dias corridos</div>
           </div>
           <div class="kpi agua">
             <div class="marca-fundo"><svg viewBox="0 0 24 24"><path d="M12 1v22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
-            <h4>Faturamento total (7d)</h4>
-            <div class="valor">R$ 1.543.988,67</div>
-            <div class="nota">Total consolidado</div>
+            <h4>Valor ganho (7d)</h4>
+            <div class="valor" id="kpi-valor-7d">R$ 0,00</div>
+            <div class="nota">Soma do que foi ganho no período</div>
           </div>
         </div>
 
@@ -1539,6 +1539,13 @@ function semear(){
     registros:[], notas:[]
   };
 
+  /* A HL e' conta de cliente ativo, nao demonstracao: recebe a
+     plataforma inteira, zerada. Continua ajustavel em Empresas > Editar. */
+  d.empresas.forEach(function(e){
+    if(e.nome === 'HL Automação Residencial')
+      e.modulos = MODULOS.map(function(m){ return m.chave; });
+  });
+
   /* Clientes e equipe de partida: a ficha so' mostra o que serve
      se tiver dado dentro. Os contatos batem com os negocios do CRM
      de proposito, para o casamento lead <-> funil aparecer. */
@@ -1684,10 +1691,13 @@ function semear(){
       idsEtapas.push(t.id);
     });
     (AMOSTRAS[emp.id] || []).forEach(function(a, k){
+      var tipo = ETAPAS_CRM_PADRAO[a[2]].tipo;
+      var fechou = (tipo === 'ganho' || tipo === 'perda') ? agora - 2 * dia : null;
       d.negocios.push({
         id:id(), codigo:String(1001 + k), empresa_id:emp.id, funil_id:f.id,
         etapa_id:idsEtapas[a[2]], nome:a[0], contato:a[1], valor:a[3],
-        responsavel:RESP[emp.id] || '', criado_em: agora - (k * 4 + 2) * dia
+        responsavel:RESP[emp.id] || '', criado_em: agora - (k * 4 + 2) * dia,
+        ganho_em: tipo === 'ganho' ? fechou : null, fechado_em: fechou
       });
     });
   });
@@ -1715,7 +1725,7 @@ function semear(){
 }
 
 /* ---------- gravacao ---------- */
-var CHAVE = 'paivawork:dados:v5';
+var CHAVE = 'paivawork:dados:v6';
 
 /* localStorage primeiro (site normal); window.storage so' existe quando
    a pagina roda como Artifact. Os dois falham em silencio de proposito:
@@ -1996,6 +2006,7 @@ function abrir(tela, nome){
   if(tela === 'empresas') pintarEmpresas();
   if(tela === 'acessos')  pintarAcessos();
   if(tela === 'campos')   pintarCampos();
+  if(tela === 'inicio')     pintarPainelInicio();
   if(telaDom === 'colecao') pintarColecao();
   if(tela === 'financeiro') pintarFinanceiro();
   if(tela === 'analise')    pintarAnalise();
@@ -2015,11 +2026,67 @@ function abrir(tela, nome){
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
+/* ============================================================
+   PAINEL DE INICIO — numeros derivados do funil
+   Nada aqui e' digitado: tudo sai dos negocios da empresa aberta.
+   Empresa sem negocio mostra zero, que e' a informacao correta.
+   ============================================================ */
+function metricasInicio(emp){
+  garantirCRM();
+  var r = {leadsDia:0, leads7:0, ganhosDia:0, ganhos7:0, valorDia:0, valor7:0, fechados7:0};
+  if(!emp) return r;
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var t0 = hoje.getTime(), t7 = t0 - 6 * 86400000;
+
+  Dados.negocios.forEach(function(x){
+    if(x.empresa_id !== emp.id) return;
+    var criado = x.criado_em || 0;
+    if(criado >= t0) r.leadsDia++;
+    if(criado >= t7) r.leads7++;
+
+    var ganho = x.ganho_em || 0;
+    if(ganho >= t0){ r.ganhosDia++; r.valorDia += Number(x.valor) || 0; }
+    if(ganho >= t7){ r.ganhos7++;  r.valor7  += Number(x.valor) || 0; }
+    if((x.fechado_em || 0) >= t7) r.fechados7++;
+  });
+  return r;
+}
+
+function pintarPainelInicio(){
+  var emp = empresaOperada();
+  var m = metricasInicio(emp);
+  var valores = {
+    'kpi-leads-dia':  nums(m.leadsDia),
+    'kpi-ganhos-dia': nums(m.ganhosDia),
+    'kpi-valor-dia':  dinheiro(m.valorDia),
+    'kpi-leads-7d':   nums(m.leads7),
+    'kpi-ganhos-7d':  nums(m.ganhos7),
+    'kpi-valor-7d':   dinheiro(m.valor7)
+  };
+  Object.keys(valores).forEach(function(k){
+    var el = $('#' + k);
+    if(el) el.textContent = valores[k];
+  });
+  var nota = $('#kpi-conv-7d');
+  if(nota) nota.textContent = m.fechados7
+    ? (m.ganhos7 / m.fechados7 * 100).toFixed(0) + '% do que fechou no período'
+    : 'Últimos 7 dias corridos';
+
+  /* atalho que aponta para modulo nao liberado vira botao morto: some */
+  todos('.atalho').forEach(function(bt){
+    var alvo = bt.getAttribute('data-ir');
+    var existe = false;
+    todos('.item').forEach(function(i){ if(i.getAttribute('data-nome') === alvo) existe = true; });
+    bt.hidden = !existe;
+  });
+}
+
 function montarTudo(){
   var emp = empresaOperada();
   aplicarCor(emp && emp.cor ? emp.cor : '#BBF3F9');
   montarMenu();
   pintarClientes();
+  pintarPainelInicio();
   $('#selo-perfil').textContent = emp ? emp.nome.toUpperCase() : 'DIRETORIA';
 
   var capa = emp ? capaDe(emp) : {titulo:'', texto:''};
@@ -4712,10 +4779,22 @@ function ligarArrasto(){
   });
 }
 
+/* Duas datas, nao uma. "fechado_em" vale para ganho e para perda —
+   e' o denominador da conversao do periodo. "ganho_em" e' so' ganho,
+   e e' o numerador. Voltar para etapa aberta limpa as duas: o negocio
+   deixou de estar fechado. */
+function marcarFecho(x, t){
+  var tipo = t ? t.tipo : 'aberta';
+  if(tipo === 'aberta'){ x.ganho_em = null; x.fechado_em = null; return; }
+  if(!x.fechado_em) x.fechado_em = Date.now();
+  x.ganho_em = (tipo === 'ganho') ? (x.ganho_em || x.fechado_em) : null;
+}
+
 function moverNegocio(idN, idT){
   var x = negocioPor(idN), t = etapaCrmPor(idT);
   if(!x || !t || x.etapa_id === idT) return;
   x.etapa_id = idT;
+  marcarFecho(x, t);
   guardar(); pintarCRM();
   recado(x.nome + ' → ' + t.nome + '.');
 }
@@ -4761,6 +4840,7 @@ function formNegocio(idN){
       x.valor = Number(val('valor')) || 0;
       x.funil_id = val('funil'); x.etapa_id = etapa;
       x.responsavel = val('responsavel').trim();
+      marcarFecho(x, etapaCrmPor(etapa));
     } else {
       Dados.negocios.push({
         id:id(), codigo:proximoCodigo(emp.id), empresa_id:emp.id,
