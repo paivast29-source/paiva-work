@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node testes/rodar.cjs"
   },
   "devDependencies": {
+    "jsdom": "^29.1.1",
     "vite": "^5.4.10"
   }
 }

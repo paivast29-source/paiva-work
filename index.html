@@ -1106,7 +1106,7 @@ td.link:hover{text-decoration:underline;}
         </div>
         <div class="quadro-tabela">
           <table>
-            <thead><tr><th>Descrição</th><th>Categoria</th><th>Vencimento</th><th>Situação</th><th>Valor</th><th></th></tr></thead>
+            <thead id="fin-cabeca"></thead>
             <tbody id="fin-linhas"></tbody>
           </table>
           <div class="vazio" id="fin-vazio" style="display:none"></div>
@@ -1185,7 +1185,7 @@ td.link:hover{text-decoration:underline;}
         </div>
         <div class="quadro-tabela">
           <table>
-            <thead><tr><th>Pesquisa</th><th>Tipo</th><th>Situação</th><th>Respostas</th><th>Conclusão</th><th>Última</th><th></th></tr></thead>
+            <thead id="cabeca-pesquisas"></thead>
             <tbody id="linhas-pesquisas"></tbody>
           </table>
           <div class="vazio" id="vazio-pesquisas" style="display:none">Nenhuma pesquisa ainda. Crie a primeira — dá para começar de um modelo pronto de NPS, satisfação ou qualificação.</div>
@@ -1508,10 +1508,11 @@ function chavear(txt){
 }
 
 function semear(){
-  var eStudio = id(), eHL = id(), eDecore = id(), eVoll = id(), eConsul = id();
+  var eHL = id(), eDecore = id(), eVoll = id(), eConsul = id();
 
   /* Um cliente e' so' nome + segmento: o segmento ja' carrega modulos,
-     rotulos e campos. A Paiva Studio e' a excecao — recebe tudo. */
+     rotulos e campos. A Paiva Studio nao e' cliente — ela e' a casa, e
+     a casa mora na diretoria, que enxerga todas as empresas de uma vez. */
   function daModelo(idE, nome, seg){
     return {id:idE, nome:nome, segmento:seg, ativa:true,
       modulos:MODELOS[seg].modulos.slice(), rotulos:copiar(MODELOS[seg].rotulos)};
@@ -1519,9 +1520,6 @@ function semear(){
 
   var d = {
     empresas:[
-      {id:eStudio, nome:'Paiva Studio', segmento:'estudio', ativa:true,
-       modulos:MODULOS.map(function(m){ return m.chave; }),
-       rotulos:copiar(MODELOS.estudio.rotulos)},
       daModelo(eHL,     'HL Automação Residencial', 'automacao'),
       daModelo(eDecore, 'Essencial Decore',         'decoracao'),
       daModelo(eVoll,   'VOLL Pilates',             'pilates'),
@@ -1541,10 +1539,7 @@ function semear(){
 
   /* A HL e' conta de cliente ativo, nao demonstracao: recebe a
      plataforma inteira, zerada. Continua ajustavel em Empresas > Editar. */
-  d.empresas.forEach(function(e){
-    if(e.nome === 'HL Automação Residencial')
-      e.modulos = MODULOS.map(function(m){ return m.chave; });
-  });
+  d.empresas[0].modulos = MODULOS.map(function(m){ return m.chave; });
 
   /* Clientes e equipe de partida: a ficha so' mostra o que serve
      se tiver dado dentro. Os contatos batem com os negocios do CRM
@@ -1558,99 +1553,14 @@ function semear(){
     d.registros.push(obj);
     return obj;
   }
-  reg(eStudio, 'clientes', {nome:'Clínica Bem Estar', email:'contato@bemestar.com.br',
-    telefone:'(62) 99145-3320', empresa:'Clínica Bem Estar', origem:'Indicação', etiqueta:'Em negociação',
-    responsavel:'Umberto Paiva', o_que_quer:'Quer reposicionar a marca e organizar o Instagram, que hoje está parado há meses.',
-    observacoes:'Sócia decide junto. Melhor falar depois das 18h.'});
-  reg(eStudio, 'clientes', {nome:'Loja Vertz', email:'marketing@vertz.com.br',
-    telefone:'(62) 99145-2210', empresa:'Vertz', origem:'Instagram', etiqueta:'Novo',
-    responsavel:'Umberto Paiva', o_que_quer:'Quer vender pelo site, hoje só vende no balcão.'});
-  reg(eStudio, 'clientes', {nome:'Construtora Alpha', email:'marketing@alpha.com.br',
-    telefone:'(62) 98120-4455', empresa:'Alpha', origem:'Site', etiqueta:'Cliente ativo',
-    responsavel:'Umberto Paiva', o_que_quer:'Lançamento de empreendimento: precisa de LP, anúncio e CRM ligado.'});
-  reg(eStudio, 'equipe', {nome:'Umberto Paiva', cargo:'Diretor', setor:'Diretoria',
-    email:'umberto@paivast.com.br', ativo:'Sim'});
-
-  [
-    ['LP — Diagnóstico gratuito', 'Captar lead', 'No ar',  820, 96],
-    ['LP — Reposicionamento',     'Vender',      'No ar',  410, 28],
-    ['LP — E-book de marca',      'Download de material', 'Pausada', 1240, 214]
-  ].forEach(function(l){
-    reg(eStudio, 'landing', {nome:l[0], objetivo:l[1], status:l[2], visitas:l[3], conversoes:l[4],
-      url:'paivast.com.br/' + chavear(l[0])});
-  });
-  [
-    ['Captação — diagnóstico', 'Meta Ads',   'Vídeo',     'No ar',    2400, 1820, 62],
-    ['Marca — awareness',      'Google Ads', 'Display',   'Pausado',  900,  4100, 11],
-    ['Remarketing — visitantes','Meta Ads',  'Carrossel', 'No ar',    600,  980,  19]
-  ].forEach(function(l){
-    reg(eStudio, 'anuncios', {nome:l[0], plataforma:l[1], formato:l[2], status:l[3],
-      investimento:l[4], cliques:l[5], leads:l[6]});
-  });
-  reg(eStudio, 'popups', {nome:'Saída — oferta de diagnóstico', gatilho:'Intenção de saída',
-    valor_gatilho:'—', titulo:'Antes de sair, leva o diagnóstico?', botao:'Quero o diagnóstico',
-    status:'Ativo', exibicoes:1450, conversoes:88});
-  reg(eStudio, 'disparos', {nome:'Retomada — leads parados', canal:'E-mail',
-    assunto:'Ainda faz sentido conversar?', status:'Enviado', enviados:340, abertos:142, cliques:31,
-    publico:'Leads sem contato há mais de 15 dias'});
-  reg(eStudio, 'disparos', {nome:'Lembrete de reunião', canal:'WhatsApp', status:'Agendado',
-    publico:'Quem tem reunião marcada para amanhã'});
-
-  /* financeiro do mes corrente, com um vencido de proposito
-     para a tela nao nascer toda verde e esconder o estado ruim */
-  var hj = new Date();
-  function dia(n){
-    var x = new Date(hj.getFullYear(), hj.getMonth(), n);
-    return x.getFullYear() + '-' + ('0'+(x.getMonth()+1)).slice(-2) + '-' + ('0'+x.getDate()).slice(-2);
-  }
-  [
-    ['Mensalidade — Construtora Alpha', 'Receita', 'Mensalidade', 4800,  dia(5),  'Sim'],
-    ['Mensalidade — Clínica Bem Estar', 'Receita', 'Mensalidade', 3200,  dia(5),  'Sim'],
-    ['Projeto — Loja Vertz',            'Receita', 'Serviço',     12500, dia(20), 'Não'],
-    ['Folha da equipe',                 'Despesa', 'Folha',       9800,  dia(5),  'Sim'],
-    ['Anúncios Meta',                   'Despesa', 'Marketing',   2400,  dia(10), 'Sim'],
-    ['Assinaturas de software',         'Despesa', 'Software',    890,   dia(12), 'Não'],
-    ['Aluguel do estúdio',              'Despesa', 'Aluguel',     3100,  dia(1),  'Não']
-  ].forEach(function(l){
-    reg(eStudio, 'financeiro', {descricao:l[0], tipo:l[1], categoria:l[2], valor:l[3],
-      vencimento:l[4], pago:l[5], pago_em:l[5] === 'Sim' ? l[4] : '', forma:'Pix'});
-  });
-
   reg(eVoll, 'clientes', {nome:'Juliana Prado', telefone:'(62) 99881-2043',
     origem:'Indicação', etiqueta:'Novo', responsavel:'Equipe VOLL',
     o_que_quer:'Quer voltar a fazer pilates depois de uma lesão no joelho. Pediu turma da manhã.'});
 
-  /* Uma pesquisa NPS pronta na Paiva Studio, para o construtor
-     abrir com estrutura em vez de tela em branco. */
-  var pq = {id:id(), empresa_id:eStudio, titulo:'NPS — clientes da Paiva Studio',
-    descricao:'Duas perguntas, menos de um minuto. Sua resposta orienta o que a gente ajusta primeiro.',
-    tipo:'nps', status:'rascunho', codigo_publico:'', abertura:null, encerramento:null,
-    limite_respostas:null, resposta_unica:true, exige_identificacao:true,
-    texto_agradecimento:'Obrigado! Sua resposta foi registrada.', redirecionar_para:'',
-    criada_em:Date.now(), criada_por:null};
-  d.pesquisas.push(pq);
-  [
-    {tipo:'escala_nps', obrigatoria:true, enunciado:'De 0 a 10, o quanto você indicaria a Paiva Studio para um amigo?',
-     config:{rotulo_min:'Não indicaria', rotulo_max:'Indicaria com certeza'}, opcoes:[]},
-    {tipo:'texto_longo', obrigatoria:false, enunciado:'Qual o principal motivo da sua nota?', config:{}, opcoes:[]},
-    {tipo:'email', obrigatoria:false, enunciado:'Seu e-mail, se quiser que a gente responda',
-     config:{}, opcoes:[], mapear_para:'contato'}
-  ].forEach(function(q, i){
-    d.perguntas.push({id:id(), pesquisa_id:pq.id, ordem:i, tipo:q.tipo, enunciado:q.enunciado,
-      ajuda:'', obrigatoria:q.obrigatoria, opcoes:q.opcoes, config:q.config, mapear_para:q.mapear_para || ''});
-  });
 
   /* Um funil por empresa, com as etapas padrao, ja' com negocios
      espalhados pela jornada — quadro vazio nao mostra estrutura. */
   var AMOSTRAS = {};
-  AMOSTRAS[eStudio] = [
-    ['Clínica Bem Estar',      'contato@bemestar.com.br',  0, 4800],
-    ['Loja Vertz',             '(62) 99145-2210',          1, 3200],
-    ['Construtora Alpha',      'marketing@alpha.com.br',   2, 12500],
-    ['Padaria do Bairro',      '(62) 98822-7741',          3, 2400],
-    ['Auto Center Praça',      'financeiro@acpraca.com',   4, 6800],
-    ['Studio He Fit',          '(62) 99310-5527',          5, 3600]
-  ];
   /* A HL entra zerada de proposito: e' conta de cliente de verdade,
      nao demonstracao. O funil, as etapas e os campos ficam — sao a
      ferramenta. O que nao fica e' dado inventado. */
@@ -1676,7 +1586,7 @@ function semear(){
   ];
 
   var RESP = {};
-  RESP[eStudio] = 'Umberto Paiva'; RESP[eHL] = 'Lucas Canassa';
+  RESP[eHL] = 'Lucas Canassa';
   RESP[eDecore] = 'Equipe Essencial'; RESP[eVoll] = 'Equipe VOLL';
   RESP[eConsul] = 'Equipe Consulfarma';
 
@@ -1702,7 +1612,7 @@ function semear(){
     });
   });
 
-  [[eStudio,'estudio'],[eHL,'automacao'],[eDecore,'decoracao'],
+  [[eHL,'automacao'],[eDecore,'decoracao'],
    [eVoll,'pilates'],[eConsul,'farmaceutico']].forEach(function(par){
     MODELOS[par[1]].campos.forEach(function(c,k){
       d.campos.push({id:id(), empresa_id:par[0], entidade:'produto', rotulo:c.rotulo,
@@ -1712,8 +1622,6 @@ function semear(){
   });
 
   d.produtos.push(
-    {id:id(), empresa_id:eStudio, nome:'Estruturação inicial', preco:0, ativo:true,
-     extras:{tipo_de_contrato:'Recorrente', prazo_de_entrega_dias:60}},
     {id:id(), empresa_id:eDecore, nome:'Projeto de interiores — apartamento', preco:9800, ativo:true,
      extras:{ambientes:5, prazo_de_entrega_dias:45}},
     {id:id(), empresa_id:eVoll, nome:'Pilates solo — plano mensal', preco:320, ativo:true,
@@ -1725,7 +1633,7 @@ function semear(){
 }
 
 /* ---------- gravacao ---------- */
-var CHAVE = 'paivawork:dados:v6';
+var CHAVE = 'paivawork:dados:v7';
 
 /* localStorage primeiro (site normal); window.storage so' existe quando
    a pagina roda como Artifact. Os dois falham em silencio de proposito:
@@ -1791,6 +1699,36 @@ function rotulo(emp, qual){
   return (emp && emp.rotulos && emp.rotulos[qual]) ? emp.rotulos[qual] : padrao[qual];
 }
 function ehDiretor(){ return Sessao && Sessao.papel === 'diretor'; }
+
+/* ---------------------------------------------------------------
+   ESCOPO DA VISAO
+   O dono da plataforma nao opera uma empresa: ele opera todas. Sem
+   isto, a diretoria tinha todos os modulos no menu e toda tela
+   dizendo "escolha uma empresa" — menu cheio, sistema vazio.
+   --------------------------------------------------------------- */
+function ehVisaoGeral(){ return ehDiretor() && !EmpresaAtiva; }
+
+function empresasEscopo(){
+  if(ehVisaoGeral()) return Dados.empresas.slice();
+  var e = empresaOperada();
+  return e ? [e] : [];
+}
+function idsEscopo(){
+  return empresasEscopo().map(function(e){ return e.id; });
+}
+function noEscopo(idE, ids){
+  return (ids || idsEscopo()).indexOf(idE) !== -1;
+}
+/* etiqueta da empresa, so' aparece quando ha' mais de uma na tela */
+function seloEmpresa(idE){
+  if(!ehVisaoGeral()) return '';
+  var e = empresaPor(idE);
+  return '<span class="pilula">' + esc(e ? e.nome : '—') + '</span>';
+}
+function colunaEmpresa(){ return ehVisaoGeral() ? '<th>Empresa</th>' : ''; }
+function celulaEmpresa(idE){
+  return ehVisaoGeral() ? '<td>' + seloEmpresa(idE) + '</td>' : '';
+}
 function empresaOperada(){
   if(!Sessao) return null;
   if(ehDiretor()) return EmpresaAtiva ? empresaPor(EmpresaAtiva) : null;
@@ -2031,15 +1969,16 @@ function abrir(tela, nome){
    Nada aqui e' digitado: tudo sai dos negocios da empresa aberta.
    Empresa sem negocio mostra zero, que e' a informacao correta.
    ============================================================ */
-function metricasInicio(emp){
+function metricasInicio(){
   garantirCRM();
   var r = {leadsDia:0, leads7:0, ganhosDia:0, ganhos7:0, valorDia:0, valor7:0, fechados7:0};
-  if(!emp) return r;
+  var ids = idsEscopo();
+  if(!ids.length) return r;
   var hoje = new Date(); hoje.setHours(0,0,0,0);
   var t0 = hoje.getTime(), t7 = t0 - 6 * 86400000;
 
   Dados.negocios.forEach(function(x){
-    if(x.empresa_id !== emp.id) return;
+    if(!noEscopo(x.empresa_id, ids)) return;
     var criado = x.criado_em || 0;
     if(criado >= t0) r.leadsDia++;
     if(criado >= t7) r.leads7++;
@@ -2053,8 +1992,7 @@ function metricasInicio(emp){
 }
 
 function pintarPainelInicio(){
-  var emp = empresaOperada();
-  var m = metricasInicio(emp);
+  var m = metricasInicio();
   var valores = {
     'kpi-leads-dia':  nums(m.leadsDia),
     'kpi-ganhos-dia': nums(m.ganhosDia),
@@ -2098,7 +2036,7 @@ function montarTudo(){
     $('#capa-titulo').innerHTML = 'Bem-vindo, <em id="capa-nome">' + esc(Sessao.nome) + '</em>.';
   }
   $('#capa-texto').textContent = capa.texto ? capa.texto : ((ehDiretor() && !emp)
-    ? 'Você está na visão de diretoria. Daqui dá para criar empresas, liberar acessos e definir o que cada cliente preenche — sem passar pelo código.'
+    ? 'Você está na visão de diretoria: o que aparece aqui soma todos os clientes de uma vez. Para operar um deles, entre pelo card — as telas passam a mostrar só o dele.'
     : 'Este é o ponto de partida de quem entra no sistema, seja qual for o setor. Daqui você abre o CRM, acompanha campanhas e enxerga a operação inteira em uma tela só.');
 }
 
@@ -2170,18 +2108,17 @@ function pintarClientes(){
   if(!mostrar) return;
 
   $('#grade-clientes').innerHTML = Dados.empresas.map(function(e){
-    var casa = (e.id === Dados.empresas[0].id);
     var seg  = MODELOS[e.segmento] ? MODELOS[e.segmento].nome : e.segmento;
     var acessos = Dados.usuarios.filter(function(u){ return u.empresa_id === e.id; }).length;
-    return '<button class="cliente' + (casa ? ' casa' : '') + '" data-entrar="' + e.id + '">' +
+    return '<button class="cliente" data-entrar="' + e.id + '">' +
       '<div class="cabecalho"><span class="sigla">' + esc(iniciais(e.nome)) + '</span>' +
       '<strong>' + esc(e.nome) + '</strong></div>' +
-      '<span class="tag' + (casa ? '' : ' cinza') + '">' + esc(seg) + '</span>' +
+      '<span class="tag cinza">' + esc(seg) + '</span>' +
       '<div class="medida">' +
         '<div><b>' + e.modulos.length + '</b><small>MÓDULOS</small></div>' +
         '<div><b>' + acessos + '</b><small>ACESSOS</small></div>' +
       '</div>' +
-      '<span class="ir">' + (casa ? 'Abrir a casa' : 'Entrar como o cliente') +
+      '<span class="ir">Entrar como o cliente' +
       '<svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span>' +
     '</button>';
   }).join('');
@@ -3110,7 +3047,11 @@ function pintarFinanceiro(){
   $('#fin-titulo').textContent = emp ? nomeModulo(emp, mod) : 'Financeiro';
   $('#fin-novo').style.display = emp ? '' : 'none';
 
-  if(!emp){
+  var geral = ehVisaoGeral();
+  if(geral) $('#fin-titulo').textContent = 'Financeiro de todos os clientes';
+  $('#fin-novo').style.display = (emp && !geral) ? '' : 'none';
+
+  if(!emp && !geral){
     $('#fin-kpis').innerHTML = ''; $('#fin-linhas').innerHTML = '';
     $('#fin-vazio').style.display = 'block';
     $('#fin-vazio').textContent = 'Escolha uma empresa em Trocar perfil para ver o financeiro dela.';
@@ -3121,7 +3062,11 @@ function pintarFinanceiro(){
   $('#fin-tipo').value = FinTipo;
   $('#fin-situacao').value = FinSit;
 
-  var todosReg = registrosDe('financeiro', emp.id);
+  var ids = idsEscopo();
+  var todosReg = [];
+  ids.forEach(function(idE){
+    registrosDe('financeiro', idE).forEach(function(r){ todosReg.push(r); });
+  });
   var lista = todosReg.filter(function(r){
     if(FinMes && mesDe(r.vencimento) !== FinMes) return false;
     if(FinTipo && r.tipo !== FinTipo) return false;
@@ -3151,6 +3096,9 @@ function pintarFinanceiro(){
     kpi('Vencido', dinheiro(vencidoTotal) + (vencidos.length ? ' · ' + vencidos.length + ' conta(s)' : ''),
         'raio', vencidoTotal > 0 ? 'escura' : '');
 
+  $('#fin-cabeca').innerHTML = '<tr><th>Descrição</th>' + colunaEmpresa() +
+    '<th>Categoria</th><th>Vencimento</th><th>Situação</th><th>Valor</th><th></th></tr>';
+
   $('#fin-linhas').innerHTML = lista.map(function(r){
     var sit = situacaoDe(r);
     var tag = sit === 'pago' ? '<span class="tag verde">Quitado</span>'
@@ -3159,6 +3107,7 @@ function pintarFinanceiro(){
     var sinal = r.tipo === 'Receita' ? 'dinheiro-pos' : 'dinheiro-neg';
     return '<tr' + (sit === 'vencido' ? ' class="vencido"' : '') + '>' +
       '<td class="nome">' + esc(r.descricao) + '</td>' +
+      celulaEmpresa(r.empresa_id) +
       '<td>' + (r.categoria ? '<span class="pilula">' + esc(r.categoria) + '</span>' : '—') + '</td>' +
       '<td>' + (r.vencimento ? dataIso(r.vencimento) : '—') + '</td>' +
       '<td>' + tag + '</td>' +
@@ -3198,17 +3147,21 @@ function kpi(titulo, valor, icone, classe){
 function pintarAnalise(){
   garantirCRM();
   var emp = empresaOperada();
+  var geral = ehVisaoGeral();
   var mod = MODULOS.filter(function(m){ return m.chave === 'analise'; })[0];
-  $('#ana-titulo').textContent = emp ? nomeModulo(emp, mod) : 'Análise de vendas';
+  $('#ana-titulo').textContent = geral ? 'Análise de todos os clientes'
+                                       : (emp ? nomeModulo(emp, mod) : 'Análise de vendas');
 
-  if(!emp){
+  if(!emp && !geral){
     $('#ana-corpo').innerHTML = '<div class="modulo"><div class="quadro">' + svg('predio') + '</div>' +
       '<h2>Nenhuma empresa selecionada</h2><p>Use Trocar perfil, ou entre por um card de cliente, ' +
       'para ver a análise de vendas dela.</p></div>';
     return;
   }
 
-  var negs = Dados.negocios.filter(function(x){ return x.empresa_id === emp.id; });
+  var ids = idsEscopo();
+  var negs = Dados.negocios.filter(function(x){ return noEscopo(x.empresa_id, ids); });
+  var porEmpresa = {};
   if(!negs.length){
     $('#ana-corpo').innerHTML = '<div class="modulo"><div class="quadro">' + svg('pizza') + '</div>' +
       '<h2>Ainda não há negócio no funil</h2><p>Esta tela lê o CRM. Assim que entrar o primeiro negócio, ' +
@@ -3228,7 +3181,10 @@ function pintarAnalise(){
     var rp = x.responsavel || 'Sem responsável';
     if(!porResp[rp]) porResp[rp] = {n:0, v:0, ganho:0};
     porResp[rp].n++; porResp[rp].v += v;
-    if(tipo === 'ganho'){ ganho += v; nGanho++; porResp[rp].ganho += v; }
+    var ne = (empresaPor(x.empresa_id) || {}).nome || '—';
+    if(!porEmpresa[ne]) porEmpresa[ne] = {n:0, v:0, ganho:0, cor:(empresaPor(x.empresa_id)||{}).cor};
+    porEmpresa[ne].n++; porEmpresa[ne].v += v;
+    if(tipo === 'ganho'){ ganho += v; nGanho++; porResp[rp].ganho += v; porEmpresa[ne].ganho += v; }
     else if(tipo === 'perda'){ perdido += v; nPerdido++; }
     else { aberto += v; nAberto++; }
   });
@@ -3245,17 +3201,25 @@ function pintarAnalise(){
     if(dias >= 0 && dias < 30) serie[29 - dias]++;
   });
 
-  var cor = emp.cor || '#BBF3F9';
+  var cor = (emp && emp.cor) || '#BBF3F9';
   var maxEtapa = 1;
   Object.keys(porEtapa).forEach(function(k){ if(porEtapa[k].v > maxEtapa) maxEtapa = porEtapa[k].v; });
 
-  var barras = Object.keys(porEtapa).map(function(k){
-    var e = porEtapa[k];
-    return '<div class="barra-l"><div class="rot" title="' + esc(k) + '">' + esc(k) + '</div>' +
-      '<div class="trilho"><div class="preenche" style="width:' +
-        Math.max(2, e.v / maxEtapa * 100) + '%;background:' + esc(e.cor) + '"></div></div>' +
-      '<div class="val">' + dinheiro(e.v) + '</div></div>';
-  }).join('');
+  /* etapa de uma empresa nao e' comparavel com a de outra: na visao
+     geral o corte que faz sentido e' por empresa. */
+  var fonte = geral ? porEmpresa : porEtapa;
+  var tituloBarras = geral ? 'Valor por cliente' : 'Valor por etapa do funil';
+  var maxBarra = 1;
+  Object.keys(fonte).forEach(function(k){ if(fonte[k].v > maxBarra) maxBarra = fonte[k].v; });
+
+  var barras = Object.keys(fonte).sort(function(a,b){ return fonte[b].v - fonte[a].v; })
+    .map(function(k){
+      var e = fonte[k];
+      return '<div class="barra-l"><div class="rot" title="' + esc(k) + '">' + esc(k) + '</div>' +
+        '<div class="trilho"><div class="preenche" style="width:' +
+          Math.max(2, e.v / maxBarra * 100) + '%;background:' + esc(e.cor || '#5B8DEF') + '"></div></div>' +
+        '<div class="val">' + dinheiro(e.v) + '</div></div>';
+    }).join('');
 
   var linhasResp = Object.keys(porResp).sort(function(a,b){ return porResp[b].ganho - porResp[a].ganho; })
     .map(function(k){
@@ -3276,7 +3240,7 @@ function pintarAnalise(){
     '</div>' +
 
     '<div class="painel-mkt"><div class="cabeca">' + svgi('grafico') +
-      '<h3>Valor por etapa do funil</h3></div><div class="barras">' + barras + '</div></div>' +
+      '<h3>' + tituloBarras + '</h3></div><div class="barras">' + barras + '</div></div>' +
 
     '<div class="painel-mkt"><div class="cabeca">' + svgi('subindo') +
       '<h3>Negócios criados nos últimos 30 dias</h3></div>' +
@@ -3629,10 +3593,12 @@ function pintarColecao(){
   $('#col-titulo').textContent = def.nome;
   $('#col-texto').textContent  = def.texto;
   $('#col-novo-txt').textContent = def.singular;
-  $('#col-novo').style.display = emp ? '' : 'none';
-  $('#col-busca').style.display = emp ? '' : 'none';
+  var geral = ehVisaoGeral();
+  if(geral) $('#col-titulo').textContent = def.nome + ' de todos os clientes';
+  $('#col-novo').style.display = (emp && !geral) ? '' : 'none';
+  $('#col-busca').style.display = (emp || geral) ? '' : 'none';
 
-  if(!emp){
+  if(!emp && !geral){
     $('#col-cabeca').innerHTML = ''; $('#col-linhas').innerHTML = '';
     $('#col-vazio').style.display = 'block';
     $('#col-vazio').textContent =
@@ -3641,11 +3607,16 @@ function pintarColecao(){
   }
 
   $('#col-cabeca').innerHTML = '<tr>' +
-    def.colunas.map(function(k){ return '<th>' + esc(rotuloColuna(ColAtual, k)) + '</th>'; }).join('') +
-    '<th></th></tr>';
+    def.colunas.map(function(k, i){
+      return '<th>' + esc(rotuloColuna(ColAtual, k)) + '</th>' + (i === 0 ? colunaEmpresa() : '');
+    }).join('') + '<th></th></tr>';
 
   var busca = ColBusca.trim().toLowerCase();
-  var lista = registrosDe(ColAtual, emp.id).filter(function(r){
+  var bruto = [];
+  idsEscopo().forEach(function(idE){
+    registrosDe(ColAtual, idE).forEach(function(r){ bruto.push(r); });
+  });
+  var lista = bruto.filter(function(r){
     if(!busca) return true;
     var alvo = def.campos.map(function(cp){ return r[cp.chave] || ''; }).join(' ').toLowerCase();
     return alvo.indexOf(busca) !== -1;
@@ -3655,7 +3626,8 @@ function pintarColecao(){
     return '<tr>' + def.colunas.map(function(k, i){
       var cls = (i === 0) ? (def.ficha ? 'nome link' : 'nome') : '';
       var attr = (i === 0 && def.ficha) ? ' data-ficha="' + r.id + '"' : '';
-      return '<td class="' + cls + '"' + attr + '>' + valorColuna(ColAtual, r, k) + '</td>';
+      return '<td class="' + cls + '"' + attr + '>' + valorColuna(ColAtual, r, k) + '</td>' +
+             (i === 0 ? celulaEmpresa(r.empresa_id) : '');
     }).join('') +
     '<td class="acoes">' +
       (def.ficha ? '<button class="bt bt-3" data-ficha="' + r.id + '">Abrir ficha</button>' : '') +
@@ -3997,9 +3969,11 @@ function pintarPesquisas(){
   var emp = empresaOperada();
   var mod = MODULOS.filter(function(m){ return m.chave === 'pesquisas'; })[0];
   $('#pesq-titulo').textContent = emp ? nomeModulo(emp, mod) : 'Pesquisas';
-  $('#nova-pesquisa').style.display = (emp && podeEditarPesquisa()) ? '' : 'none';
+  var geral = ehVisaoGeral();
+  if(geral) $('#pesq-titulo').textContent = 'Pesquisas de todos os clientes';
+  $('#nova-pesquisa').style.display = (emp && !geral && podeEditarPesquisa()) ? '' : 'none';
 
-  if(!emp){
+  if(!emp && !geral){
     $('#linhas-pesquisas').innerHTML = '';
     $('#vazio-pesquisas').style.display = 'block';
     $('#vazio-pesquisas').textContent =
@@ -4007,7 +3981,10 @@ function pintarPesquisas(){
     return;
   }
 
-  var lista = pesquisasDe(emp.id);
+  var lista = [];
+  idsEscopo().forEach(function(idE){
+    pesquisasDe(idE).forEach(function(p){ lista.push(p); });
+  });
   $('#linhas-pesquisas').innerHTML = lista.map(function(p){
     var rs = respostasDe(p.id);
     var ok = rs.filter(function(r){ return r.concluida; }).length;
@@ -4016,6 +3993,7 @@ function pintarPesquisas(){
     rs.forEach(function(r){ if((r.enviada_em||0) > ultima) ultima = r.enviada_em; });
     var cls = p.status === 'publicada' ? 'verde' : (p.status === 'encerrada' ? 'cinza' : 'roxa');
     return '<tr><td class="nome">' + esc(p.titulo) + '</td>' +
+      celulaEmpresa(p.empresa_id) +
       '<td><span class="tag cinza">' + esc(MODELOS_PESQUISA[p.tipo] ? MODELOS_PESQUISA[p.tipo].nome : p.tipo) + '</span></td>' +
       '<td><span class="tag ' + cls + '">' + ROTULO_STATUS[p.status] + '</span></td>' +
       '<td>' + ok + (rs.length > ok ? ' de ' + rs.length : '') + '</td>' +
@@ -4029,6 +4007,9 @@ function pintarPesquisas(){
           : '<button class="bt bt-3" data-abrir-pesq="' + p.id + '">Ver</button>') +
       '</td></tr>';
   }).join('');
+
+  $('#cabeca-pesquisas').innerHTML = '<tr><th>Pesquisa</th>' + colunaEmpresa() +
+    '<th>Tipo</th><th>Situação</th><th>Respostas</th><th>Conclusão</th><th>Última</th><th></th></tr>';
 
   $('#vazio-pesquisas').style.display = lista.length ? 'none' : 'block';
   if(!lista.length) $('#vazio-pesquisas').textContent =
@@ -4670,10 +4651,19 @@ function pintarCRM(){
   var mod = MODULOS.filter(function(m){ return m.chave === 'crm'; })[0];
   $('#crm-titulo').textContent = emp ? nomeModulo(emp, mod) : 'CRM Comercial';
 
-  if(!emp) return avisoCRM('predio', 'Nenhuma empresa selecionada',
+  var geral = ehVisaoGeral();
+  if(!emp && !geral) return avisoCRM('predio', 'Nenhuma empresa selecionada',
     'Use Trocar perfil no topo, ou entre por um card de cliente, para abrir o CRM de uma empresa.');
 
-  var funis = funisDe(emp.id);
+  if(geral) $('#crm-titulo').textContent = 'CRM de todos os clientes';
+
+  /* Na visao geral as abas listam os funis de todas as empresas. Somar
+     os quadros nao daria: cada empresa tem etapas proprias, entao uma
+     coluna "Apresentacao" de uma nao e' a da outra. */
+  var funis = [];
+  idsEscopo().forEach(function(idE){
+    funisDe(idE).forEach(function(f){ funis.push(f); });
+  });
   if(!funis.length) return avisoCRM('filtro', 'Nenhum funil criado ainda',
     'A diretoria monta os funis e as etapas em Funis do CRM. Assim que existir um funil, o quadro aparece aqui.');
 
@@ -4683,8 +4673,11 @@ function pintarCRM(){
 
   $('#crm-abas').innerHTML = funis.map(function(f){
     var qtd = Dados.negocios.filter(function(x){ return x.funil_id === f.id; }).length;
+    var rot = ehVisaoGeral()
+      ? (empresaPor(f.empresa_id) || {}).nome + ' · ' + f.nome
+      : f.nome;
     return '<button class="aba' + (f.id === CrmFunil ? ' atual' : '') + '" data-funil="' + f.id + '">' +
-      esc(f.nome) + ' · ' + qtd + '</button>';
+      esc(rot) + ' · ' + qtd + '</button>';
   }).join('');
   aoClicar('data-funil', function(i){ CrmFunil = i; pintarCRM(); });
 
@@ -4741,6 +4734,8 @@ function pintarCRM(){
 
   ligarArrasto();
   aoClicar('data-negocio', formNegocio);
+  /* criar exige saber de qual empresa e' o negocio */
+  $('#novo-negocio').style.display = ehVisaoGeral() ? 'none' : '';
 }
 
 function cartaoNegocio(x){
