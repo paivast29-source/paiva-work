@@ -2,6 +2,8 @@ const fs = require('fs');
 const CAMINHO_APP = require('path').join(__dirname, '..', 'index.html');
 const { JSDOM } = require('jsdom');
 const html = fs.readFileSync(CAMINHO_APP, 'utf8');
+/* a chave de gravacao e versionada: leia do proprio app em vez de fixar aqui */
+const CHAVE_DADOS = (html.match(/paivawork:dados:v\d+/) || ["paivawork:dados:v1"])[0];
 let falhas = 0;
 const ok = (d, c, e) => { console.log(`  ${c ? 'OK   ' : 'FALHA'} ${d}${e ? '  (' + e + ')' : ''}`); if (!c) falhas++; };
 
@@ -45,7 +47,7 @@ const limpo = (s) => s.replace(/ /g, ' ');
   ok('todos os cards dizem "Entrar como o cliente"',
     [...d.querySelectorAll('#grade-clientes .ir')].every((s) => /Entrar como o cliente/.test(s.textContent)));
 
-  const salvo = JSON.parse(dom.window.localStorage.getItem('paivawork:dados:v7'));
+  const salvo = JSON.parse(dom.window.localStorage.getItem(CHAVE_DADOS));
   ok('4 empresas gravadas', salvo.empresas.length === 4, `${salvo.empresas.length}`);
   ok('nenhum registro órfão da Paiva Studio',
     salvo.registros.every((r) => salvo.empresas.some((e) => e.id === r.empresa_id)));
@@ -71,14 +73,19 @@ const limpo = (s) => s.replace(/ /g, ' ');
   // CRM
   menu(d, 'CRM Comercial');
   const abas = [...d.querySelectorAll('#crm-abas .aba')].map((a) => a.textContent);
-  console.log(`    abas do CRM: ${abas.join('  |  ')}\n`);
-  ok('um funil por cliente nas abas', abas.length === 4, `${abas.length}`);
-  ok('cada aba diz de que empresa é',
-    abas.every((a) => /·/.test(a)) && abas.some((a) => /VOLL/.test(a)));
+  const funis = [...d.querySelectorAll('.crm-funil h4')].map((h) => h.textContent);
+  console.log(`    abas do CRM: ${abas.join('  |  ')}`);
+  console.log(`    funis no quadro: ${funis.join('  |  ')}\n`);
+  ok('na visão geral só abrem as abas que somam empresas',
+    abas.length === 3 && /Pipeline/.test(abas[0]), abas.join(', '));
+  ok('o quadro lista os funis de todos os clientes',
+    funis.length >= 4 && ['VOLL', 'Essencial', 'Consulfarma', 'HL'].every(
+      (n) => funis.some((f) => f.includes(n))), `${funis.length} funis`);
+  ok('cada funil diz de que empresa é', funis.every((f) => /·/.test(f)));
   ok('título indica a visão consolidada',
     /todos os clientes/i.test(d.querySelector('#crm-titulo').textContent));
   ok('não dá para criar negócio sem escolher empresa',
-    d.querySelector('#novo-negocio').style.display === 'none');
+    d.querySelector('#crm-acao').style.display === 'none');
 
   // Análise
   menu(d, 'Análise de vendas');
@@ -119,12 +126,16 @@ const limpo = (s) => s.replace(/ /g, ' ');
 
   menu(d, 'CRM Comercial');
   const abasVoll = [...d.querySelectorAll('#crm-abas .aba')].map((a) => a.textContent);
-  ok('só o funil da VOLL', abasVoll.length === 1, abasVoll.join(', '));
-  ok('sem prefixo de empresa na aba', !/·.*·/.test(abasVoll[0]), abasVoll[0]);
-  ok('volta a poder criar negócio', d.querySelector('#novo-negocio').style.display !== 'none');
+  const funisVoll = [...d.querySelectorAll('.crm-funil h4')].map((h) => h.textContent);
+  ok('operando um cliente, a barra do CRM abre inteira',
+    abasVoll.length === 9 && abasVoll.some((a) => /Responsáveis/.test(a)), `${abasVoll.length} abas`);
+  ok('só os funis da VOLL', funisVoll.length === 3, funisVoll.join(', '));
+  ok('sem prefixo de empresa no funil', !/·/.test(funisVoll[0]), funisVoll[0]);
+  ok('volta a poder criar negócio', d.querySelector('#crm-acao').style.display !== 'none');
 
   menu(d, 'Aulas');
-  ok('produtos só da VOLL', d.querySelectorAll('#linhas-produtos tr').length === 1);
+  ok('produtos só da VOLL', d.querySelectorAll('#linhas-produtos tr').length === 2,
+    `${d.querySelectorAll('#linhas-produtos tr').length}`);
 
   // a VOLL nao tem o modulo Analise; a HL tem todos os 12.
   // Entrando nela, a analise TEM que ficar vazia — a diretoria mostrava
@@ -150,7 +161,10 @@ const limpo = (s) => s.replace(/ /g, ' ');
   logar(e, 'Lucas Canassa', '1234');
   menu(e, 'CRM Comercial');
   const abasHL = [...e.querySelectorAll('#crm-abas .aba')].map((a) => a.textContent);
-  ok('HL vê um funil só', abasHL.length === 1, abasHL.join(', '));
+  const funisHL = [...e.querySelectorAll('.crm-funil h4')].map((h) => h.textContent);
+  ok('HL vê só os funis dela', funisHL.length === 2, funisHL.join(', '));
+  // a aba Parceiros só aparece para quem tem tipo de parceiro cadastrado
+  ok('HL não vê a aba de parceiros', !abasHL.some((a) => /Parceiros/.test(a)), abasHL.join(', '));
   menu(e, 'Clientes');
   ok('HL não ganha a coluna Empresa',
     ![...e.querySelectorAll('#col-cabeca th')].map((t) => t.textContent).includes('Empresa'));

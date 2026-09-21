@@ -146,7 +146,9 @@ const contraste = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q -
   const brancos = resto.match(/background:\s*#fff\b/gi) || [];
   ok('nenhum background:#fff fixo restante', brancos.length === 0, `${brancos.length} restante(s)`);
   const textoBranco = (resto.match(/(?:color|stroke):\s*#fff\b/gi) || []).length;
-  ok('textos brancos sobre gradiente preservados', textoBranco === 17, `${textoBranco} (esperado 17)`);
+  // 17 dos gradientes + 1 da bolha de iniciais do CRM, que tem fundo
+  // colorido proprio e por isso nao segue o tema
+  ok('textos brancos sobre fundo colorido preservados', textoBranco === 18, `${textoBranco} (esperado 18)`);
 
   console.log('\n' + '='.repeat(66));
   console.log(falhas === 0 ? 'TODAS AS VERIFICACOES PASSARAM' : `${falhas} FALHA(S)`);

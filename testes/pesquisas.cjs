@@ -2,6 +2,8 @@ const fs = require('fs');
 const CAMINHO_APP = require('path').join(__dirname, '..', 'index.html');
 const { JSDOM } = require('jsdom');
 const CAM = CAMINHO_APP;
+/* a chave de gravacao e versionada: leia do proprio app em vez de fixar aqui */
+const CHAVE_DADOS = (fs.readFileSync(CAM, 'utf8').match(/paivawork:dados:v\d+/) || ['paivawork:dados:v1'])[0];
 let falhas = 0;
 function ok(desc, cond, extra) {
   console.log(`  ${cond ? 'OK   ' : 'FALHA'} ${desc}${extra ? '  (' + extra + ')' : ''}`);
@@ -16,7 +18,7 @@ function abrir(semente) {
     pretendToBeVisual: true,
     beforeParse(window) {
       window.scrollTo = () => {};
-      if (semente) window.localStorage.setItem('paivawork:dados:v7', semente);
+      if (semente) window.localStorage.setItem(CHAVE_DADOS, semente);
     },
   });
 }
@@ -144,7 +146,7 @@ const erros = (d) => [...d.querySelectorAll('#constr-avisos .aviso-erro li')].ma
   ok('sem erros pendentes', erros(d).length === 0, erros(d).join(' / '));
   d.querySelector('#constr-publicar').click();
   ok('status virou Publicada', d.querySelector('#constr-status').textContent === 'Publicada');
-  const guardado = JSON.parse(dom.window.localStorage.getItem('paivawork:dados:v7'));
+  const guardado = JSON.parse(dom.window.localStorage.getItem(CHAVE_DADOS));
   const pub = guardado.pesquisas[0];
   ok('codigo_publico gerado', !!pub.codigo_publico && pub.codigo_publico.length > 8);
   ok('perguntas gravadas com ordem', guardado.perguntas.filter((q) => q.pesquisa_id === pub.id).length === 4);
@@ -161,7 +163,7 @@ const erros = (d) => [...d.querySelectorAll('#constr-avisos .aviso-erro li')].ma
   ok('janela larga volta ao normal ao fechar',
     !d.querySelector('.janela').classList.contains('larga'));
 
-  const semente = dom.window.localStorage.getItem('paivawork:dados:v7');
+  const semente = dom.window.localStorage.getItem(CHAVE_DADOS);
   dom.window.close();
 
   // ============================================ TRAVA APOS RESPOSTA

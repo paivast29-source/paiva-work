@@ -2,6 +2,8 @@ const fs = require('fs');
 const CAMINHO_APP = require('path').join(__dirname, '..', 'index.html');
 const { JSDOM } = require('jsdom');
 const html = fs.readFileSync(CAMINHO_APP, 'utf8');
+/* a chave de gravacao e versionada: leia do proprio app em vez de fixar aqui */
+const CHAVE_DADOS = (html.match(/paivawork:dados:v\d+/) || ["paivawork:dados:v1"])[0];
 let falhas = 0;
 const ok = (d, c, e) => { console.log(`  ${c ? 'OK   ' : 'FALHA'} ${d}${e ? '  (' + e + ')' : ''}`); if (!c) falhas++; };
 
@@ -109,7 +111,7 @@ const kpis = (d) => ['kpi-leads-dia', 'kpi-ganhos-dia', 'kpi-valor-dia',
   console.log('='.repeat(68) + '\n');
   menu(d, 'CRM Comercial');
   // abre um negocio em aberto e joga para a etapa de ganho
-  const cartao = [...d.querySelectorAll('#crm-quadro .coluna')][0].querySelector('.negocio');
+  const cartao = [...d.querySelectorAll('.quadro-crm .coluna')][0].querySelector('.negocio');
   const nomeNeg = cartao.querySelector('strong').textContent;
   cartao.click();
   const sel = d.querySelector('#janela-miolo [name="etapa"]');
@@ -126,7 +128,7 @@ const kpis = (d) => ['kpi-leads-dia', 'kpi-ganhos-dia', 'kpi-valor-dia',
 
   // desfazer: voltar para etapa aberta limpa a marca
   menu(d, 'CRM Comercial');
-  const pago = [...d.querySelectorAll('#crm-quadro .coluna')]
+  const pago = [...d.querySelectorAll('.quadro-crm .coluna')]
     .find((col) => col.textContent.includes('PAGO') || /Pago/.test(col.querySelector('.nome').textContent));
   const volta = [...pago.querySelectorAll('.negocio')]
     .find((x) => x.querySelector('strong').textContent === nomeNeg);
@@ -149,7 +151,7 @@ const kpis = (d) => ['kpi-leads-dia', 'kpi-ganhos-dia', 'kpi-valor-dia',
   console.log(`    VOLL: ${itensVoll.join(' · ')}\n`);
   ok('VOLL segue com o pacote reduzido',
     !itensVoll.includes('Marketing') && !itensVoll.includes('Clientes'), itensVoll.join(' · '));
-  const salvo = JSON.parse(dom.window.localStorage.getItem('paivawork:dados:v7'));
+  const salvo = JSON.parse(dom.window.localStorage.getItem(CHAVE_DADOS));
   const conta = (nome) => salvo.empresas.find((e) => e.nome === nome).modulos.length;
   console.log(`    módulos: HL ${conta('HL Automação Residencial')} | ` +
     `Essencial ${conta('Essencial Decore')} | VOLL ${conta('VOLL Pilates')} | ` +

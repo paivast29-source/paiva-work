@@ -2,6 +2,8 @@ const fs = require('fs');
 const CAMINHO_APP = require('path').join(__dirname, '..', 'index.html');
 const { JSDOM } = require('jsdom');
 const html = fs.readFileSync(CAMINHO_APP, 'utf8');
+/* a chave de gravacao e versionada: leia do proprio app em vez de fixar aqui */
+const CHAVE_DADOS = (html.match(/paivawork:dados:v\d+/) || ["paivawork:dados:v1"])[0];
 let falhas = 0;
 const ok = (d, c, e) => { console.log(`  ${c ? 'OK   ' : 'FALHA'} ${d}${e ? '  (' + e + ')' : ''}`); if (!c) falhas++; };
 
@@ -90,16 +92,18 @@ const entrou = (d) => d.querySelector('#app').classList.contains('ativo');
   console.log('3. NUMEROS ZERADOS, FERRAMENTA DE PE');
   console.log('='.repeat(68) + '\n');
   menu(d, 'CRM Comercial');
-  const cols = [...d.querySelectorAll('#crm-quadro .coluna')];
+  const cols = [...d.querySelectorAll('.quadro-crm .coluna')];
   ok('funil existe com as 6 etapas', cols.length === 6, `${cols.length} colunas`);
-  ok('nenhum negocio no quadro', d.querySelectorAll('#crm-quadro .negocio').length === 0);
+  ok('nenhum negocio no quadro', d.querySelectorAll('.quadro-crm .negocio').length === 0);
   ok('toda coluna mostra "Arraste aqui"',
-    d.querySelectorAll('#crm-quadro .solte').length === 6);
+    d.querySelectorAll('.quadro-crm .solte').length === 6);
   const res = [...d.querySelectorAll('#crm-resumo div')].map((x) =>
     x.querySelector('small').textContent + '=' + x.querySelector('b').textContent);
   console.log(`    resumo do CRM: ${res.join('  |  ')}`);
   ok('resumo zerado', res[0] === 'NEGÓCIOS=0' && /R\$\s*0,00/.test(res[1]), res.join(' '));
-  ok('botao de criar negocio disponivel', !!d.querySelector('#novo-negocio'));
+  ok('botao de criar negocio disponivel',
+    d.querySelector('#crm-acao').style.display !== 'none' &&
+    d.querySelector('#crm-acao-texto').textContent === 'Novo negócio');
 
   menu(d, 'Análise de vendas');
   const txtAna = d.querySelector('#ana-corpo').textContent;
@@ -120,13 +124,19 @@ const entrou = (d) => d.querySelector('#app').classList.contains('ativo');
     d.querySelectorAll('#col-linhas tr').length === 0 && !!d.querySelector('#col-novo'));
 
   // os campos proprios da HL continuam configurados
-  const salvo = JSON.parse(dom.window.localStorage.getItem('paivawork:dados:v7'));
+  const salvo = JSON.parse(dom.window.localStorage.getItem(CHAVE_DADOS));
   const hl = salvo.empresas.find((e) => e.nome === 'HL Automação Residencial');
   const camposHL = salvo.campos.filter((cp) => cp.empresa_id === hl.id).map((cp) => cp.rotulo);
   console.log(`\n    campos de cadastro da HL: ${camposHL.join(', ')}`);
   ok('campos de cadastro preservados', camposHL.length === 2);
+  // dois funis: o comercial e o de entrada, que toda empresa ganha
   ok('funil e etapas preservados',
-    salvo.funis.filter((f) => f.empresa_id === hl.id).length === 1);
+    salvo.funis.filter((f) => f.empresa_id === hl.id).length === 2,
+    salvo.funis.filter((f) => f.empresa_id === hl.id).map((f) => f.nome).join(', '));
+  ok('listas do CRM semeadas pelo modelo de segmento, nao por codigo',
+    salvo.departamentos.filter((r) => r.empresa_id === hl.id).length >= 6 &&
+    salvo.tipos_tarefa.filter((r) => r.empresa_id === hl.id).length >= 6 &&
+    salvo.motivos_perda.filter((r) => r.empresa_id === hl.id).length >= 6);
   ok('zero registros da HL',
     salvo.registros.filter((r) => r.empresa_id === hl.id).length === 0);
   ok('zero negocios da HL',
@@ -144,11 +154,17 @@ const entrou = (d) => d.querySelector('#app').classList.contains('ativo');
   ok('VOLL segue com negocios',
     salvo.negocios.filter((x) => x.empresa_id ===
       salvo.empresas.find((e) => e.nome === 'VOLL Pilates').id).length === 5);
-  ok('5 acessos no total', salvo.usuarios.length === 5, `${salvo.usuarios.length}`);
+  // 5 logins + a operacao comercial da VOLL e os consultores das outras
+  ok('os 5 logins originais continuam existindo',
+    ['umbertopaiva', 'lucas canassa', 'essencial', 'voll', 'consulfarma']
+      .every((l) => salvo.usuarios.some((u) => u.login.toLowerCase() === l)),
+    `${salvo.usuarios.length} usuarios no total`);
+  ok('a HL nao ganhou pessoa inventada',
+    salvo.usuarios.filter((u) => u.empresa_id === hl.id).length === 1);
   console.log('');
   salvo.usuarios.forEach((u) => {
     const emp = u.empresa_id ? salvo.empresas.find((e) => e.id === u.empresa_id).nome : '— diretoria —';
-    console.log(`    ${u.login.padEnd(16)} ${u.papel.padEnd(9)} ${emp}`);
+    console.log(`    ${(u.login || '(sem login)').padEnd(16)} ${u.papel.padEnd(10)} ${emp}`);
   });
   dom.window.close();
 

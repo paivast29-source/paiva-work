@@ -3,6 +3,8 @@ const { JSDOM } = require('jsdom');
 const CAMINHO_APP = require('path').join(__dirname, '..', 'index.html');
 
 const html = fs.readFileSync(CAMINHO_APP, 'utf8');
+/* a chave de gravacao e versionada: leia do proprio app em vez de fixar aqui */
+const CHAVE_DADOS = (html.match(/paivawork:dados:v\d+/) || ["paivawork:dados:v1"])[0];
 
 function abrirApp() {
   const dom = new JSDOM(html, {
@@ -117,13 +119,15 @@ function conferir(desc, ok) {
   console.log('\n' + '='.repeat(64));
   console.log('4. PERSISTENCIA');
   console.log('='.repeat(64));
-  const bruto = w.localStorage.getItem('paivawork:dados:v7');
-  console.log(`\n  chave paivawork:dados:v7 -> ${bruto ? bruto.length.toLocaleString('pt-BR') + ' chars' : 'VAZIA'}`);
+  const bruto = w.localStorage.getItem(CHAVE_DADOS);
+  console.log(`\n  chave ${CHAVE_DADOS} -> ${bruto ? bruto.length.toLocaleString('pt-BR') + ' chars' : 'VAZIA'}`);
   conferir('dados gravados no localStorage', !!bruto);
   if (bruto) {
     const salvo = JSON.parse(bruto);
     conferir('4 empresas gravadas', salvo.empresas.length === 4);
-    conferir('5 acessos gravados', salvo.usuarios.length === 5);
+    conferir('os 5 logins de partida gravados',
+      ['umbertopaiva', 'lucas canassa', 'essencial', 'voll', 'consulfarma']
+        .every((l) => salvo.usuarios.some((u) => u.login.toLowerCase() === l)));
   }
   w.close();
 

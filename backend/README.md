@@ -19,7 +19,8 @@ documento de arquitetura. Este arquivo cobre só o que fazer com a pasta.
 | `supabase/migrations/0005_colecoes.sql` | Motor de coleções e anotações da ficha |
 | `supabase/migrations/0006_pesquisas.sql` | Pesquisas, perguntas, respostas e a porta pública |
 | `supabase/migrations/0007_guardas.sql` | Verificação de cobertura de RLS e o papel `paiva_api` |
-| `testes/isolamento.sql` | 8 blocos de teste, incluindo tentativas de burlar |
+| `supabase/migrations/0008_crm_comercial.sql` | CRM completo: listas por empresa, equipes, acesso a funil, carteira, clientes, financeiro, tarefas, indicações, parceiros e acertos |
+| `testes/isolamento.sql` | 11 blocos de teste, incluindo tentativas de burlar |
 
 ---
 
@@ -42,6 +43,26 @@ cima — é o erro mais comum. Por isso as migrações nunca escrevem o
 redundante com chave estrangeira **composta**. Uma etapa não pode
 pertencer à empresa A com seu funil na empresa B — o banco recusa. Isso
 transforma uma classe inteira de bug de escrita em erro de constraint.
+
+### A quarta camada, só no CRM: a carteira
+
+Isolamento entre empresas responde "de quem é esta linha?". Dentro da
+mesma empresa ainda falta responder "quem pode ler esta linha?" — e a
+resposta não pode morar só no JavaScript, porque JavaScript não
+sobrevive a um `curl`.
+
+Por isso a migração 0008 acrescenta uma política **RESTRICTIVE** em
+`negocios`, que **soma** à política de empresa em vez de substituí-la.
+Ela aplica, nesta ordem:
+
+1. **Acesso ao funil**, concedido por equipe (`funis_equipes`), nunca
+   por pessoa.
+2. **Visibilidade de carteira** (`proprios` / `equipe` / `todos`).
+
+A ordem não é detalhe. Invertida, o vendedor enxerga a carteira do
+colega e ninguém percebe até virar problema entre pessoas. Os blocos 9 e
+10 de `testes/isolamento.sql` batem nisso falando SQL direto com o
+banco, que é exatamente o que um cliente mal-intencionado faria.
 
 ### O que NÃO usar
 

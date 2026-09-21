@@ -2,6 +2,8 @@ const fs = require('fs');
 const CAMINHO_APP = require('path').join(__dirname, '..', 'index.html');
 const { JSDOM } = require('jsdom');
 const CAM = CAMINHO_APP;
+/* a chave de gravacao e versionada: leia do proprio app em vez de fixar aqui */
+const CHAVE_DADOS = (fs.readFileSync(CAM, 'utf8').match(/paivawork:dados:v\d+/) || ['paivawork:dados:v1'])[0];
 let falhas = 0;
 function ok(d, cond, extra) {
   console.log(`  ${cond ? 'OK   ' : 'FALHA'} ${d}${extra ? '  (' + extra + ')' : ''}`);
@@ -13,7 +15,7 @@ function abrir(semente) {
     beforeParse(w) {
       w.scrollTo = () => {};
       w.open = () => null;
-      if (semente) w.localStorage.setItem('paivawork:dados:v7', semente);
+      if (semente) w.localStorage.setItem(CHAVE_DADOS, semente);
     },
   });
 }
@@ -137,7 +139,7 @@ function comFixture(bruto) {
   // primeiro boot só para colher a semente, segundo já com o fixture
   const zero = abrir();
   await espera(350);
-  const bruto = zero.window.localStorage.getItem('paivawork:dados:v7');
+  const bruto = zero.window.localStorage.getItem(CHAVE_DADOS);
   zero.window.close();
 
   const dom = abrir(comFixture(bruto)); const d = dom.window.document;
@@ -325,7 +327,7 @@ function comFixture(bruto) {
   console.log('\n' + '='.repeat(70));
   console.log('7. ISOLAMENTO POR EMPRESA');
   console.log('='.repeat(70) + '\n');
-  const salvo = JSON.parse(dom.window.localStorage.getItem('paivawork:dados:v7'));
+  const salvo = JSON.parse(dom.window.localStorage.getItem(CHAVE_DADOS));
   ok('todo registro tem empresa_id', salvo.registros.every((r) => !!r.empresa_id));
   ok('toda nota tem empresa_id', salvo.notas.every((x) => !!x.empresa_id));
   const idStudio = salvo.empresas[0].id;
@@ -345,7 +347,7 @@ function comFixture(bruto) {
   entrar(f, 'VOLL Pilates');
   menu(f, 'CRM Comercial');
   ok('CRM da VOLL nao mostra negocio da Paiva Studio',
-    !f.querySelector('#crm-quadro').textContent.includes('Clínica Bem Estar'));
+    !f.querySelector('#crm-conteudo').textContent.includes('Clínica Bem Estar'));
   dom2.window.close(); dom3.window.close();
 
   console.log('\n' + '='.repeat(70));

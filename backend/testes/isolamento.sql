@@ -283,6 +283,133 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
+-- 9. CARTEIRA — consultor não lê negócio de outro, nem pelo SQL
+--
+-- Este é o critério de aceite 4 da especificação do CRM. A checagem que
+-- existe na tela não vale nada aqui: o teste fala direto com o banco,
+-- que é exatamente o que um curl faria.
+-- ---------------------------------------------------------------------
+\echo ''
+\echo '== 9. visibilidade de carteira =='
+
+create temporary table t_pessoas (rotulo text primary key, id uuid);
+
+do $$
+declare
+  v_alfa  uuid := (select id from t_ids where rotulo = 'alfa');
+  v_funil uuid := (select id from public.funis where empresa_id = v_alfa limit 1);
+  v_etapa uuid := (select id from public.etapas_crm where empresa_id = v_alfa limit 1);
+  v_ana   uuid := gen_random_uuid();
+  v_bruno uuid := gen_random_uuid();
+  v_lider uuid := gen_random_uuid();
+  v_equipe uuid;
+begin
+  -- perfis fora do auth.users não são possíveis; o teste usa os ids
+  -- direto nas colunas de responsável, que é o que a política lê
+  insert into t_pessoas values ('ana', v_ana), ('bruno', v_bruno), ('lider', v_lider);
+
+  insert into public.equipes (empresa_id, nome) values (v_alfa, 'Comercial')
+    returning id into v_equipe;
+
+  insert into public.negocios (empresa_id, funil_id, etapa_id, nome, valor, responsavel_id)
+    values (v_alfa, v_funil, v_etapa, 'CARTEIRA DA ANA',   100, v_ana);
+  insert into public.negocios (empresa_id, funil_id, etapa_id, nome, valor, responsavel_id)
+    values (v_alfa, v_funil, v_etapa, 'CARTEIRA DO BRUNO', 100, v_bruno);
+end $$;
+
+do $$
+declare
+  v_alfa uuid := (select id from t_ids where rotulo = 'alfa');
+  v_ana  uuid := (select id from t_pessoas where rotulo = 'ana');
+  v_n    integer;
+begin
+  perform set_config('role', 'paiva_api', true);
+  perform set_config('app.empresa_id', v_alfa::text, true);
+  perform set_config('app.papel', 'consultor', true);
+  perform set_config('app.usuario_id', v_ana::text, true);
+
+  -- a Ana existe como perfil? Não: sem perfil, app.visibilidade_atual()
+  -- devolve 'proprios', que é o padrão seguro. É o que se quer testar.
+  select count(*) into v_n from public.negocios where nome = 'CARTEIRA DO BRUNO';
+  perform pg_temp.exigir(v_n = 0, 'consultor não lê o negócio do colega nem pelo SQL');
+
+  select count(*) into v_n from public.negocios where nome = 'CARTEIRA DA ANA';
+  perform pg_temp.exigir(v_n = 1, 'e continua lendo o próprio (senão o teste seria vácuo)');
+
+  perform set_config('role', 'none', true);
+end $$;
+
+-- ---------------------------------------------------------------------
+-- 10. ACESSO AO FUNIL VEM ANTES DA CARTEIRA
+-- ---------------------------------------------------------------------
+\echo ''
+\echo '== 10. acesso ao funil, por equipe =='
+
+do $$
+declare
+  v_alfa   uuid := (select id from t_ids where rotulo = 'alfa');
+  v_ana    uuid := (select id from t_pessoas where rotulo = 'ana');
+  v_funil  uuid;
+  v_etapa  uuid;
+  v_n      integer;
+begin
+  -- funil restrito, sem nenhuma equipe liberada
+  insert into public.funis (empresa_id, nome, liberado_todos)
+    values (v_alfa, 'Restrito', false) returning id into v_funil;
+  insert into public.etapas_crm (empresa_id, funil_id, nome, tipo)
+    values (v_alfa, v_funil, 'Entrada', 'aberta') returning id into v_etapa;
+  -- negócio em que a PRÓPRIA Ana é a responsável
+  insert into public.negocios (empresa_id, funil_id, etapa_id, nome, valor, responsavel_id)
+    values (v_alfa, v_funil, v_etapa, 'DENTRO DO FUNIL RESTRITO', 100, v_ana);
+
+  perform set_config('role', 'paiva_api', true);
+  perform set_config('app.empresa_id', v_alfa::text, true);
+  perform set_config('app.papel', 'consultor', true);
+  perform set_config('app.usuario_id', v_ana::text, true);
+
+  select count(*) into v_n from public.negocios where nome = 'DENTRO DO FUNIL RESTRITO';
+  perform pg_temp.exigir(v_n = 0,
+    'sem acesso ao funil, nem o próprio negócio aparece — funil primeiro, carteira depois');
+
+  perform set_config('role', 'none', true);
+end $$;
+
+-- ---------------------------------------------------------------------
+-- 11. ACERTO FECHADO NÃO MUDA
+-- ---------------------------------------------------------------------
+\echo ''
+\echo '== 11. acerto congelado =='
+
+do $$
+declare
+  v_alfa uuid := (select id from t_ids where rotulo = 'alfa');
+  v_tipo uuid;
+  v_parc uuid;
+  v_acerto uuid;
+  v_deu  boolean := false;
+begin
+  insert into public.tipos_parceiro (empresa_id, nome) values (v_alfa, 'Licenciado')
+    returning id into v_tipo;
+  insert into public.parceiros (empresa_id, tipo_id, nome, situacao)
+    values (v_alfa, v_tipo, 'PARCEIRO ISCA', 'ativo') returning id into v_parc;
+  insert into public.acertos (empresa_id, parceiro_id, periodo, bruto, liquido, situacao, fechado_em)
+    values (v_alfa, v_parc, '2026-01', 1000, 1000, 'fechado', now()) returning id into v_acerto;
+
+  begin
+    update public.acertos set bruto = 5000 where id = v_acerto;
+    v_deu := true;
+  exception when others then v_deu := false;
+  end;
+  perform pg_temp.exigir(not v_deu, 'período fechado recusa alteração de valor');
+
+  -- marcar como pago continua permitido
+  update public.acertos set situacao = 'pago', pago_em = now() where id = v_acerto;
+  perform pg_temp.exigir(
+    (select situacao from public.acertos where id = v_acerto) = 'pago',
+    'mas ainda dá para marcar como pago');
+end $$;
+
+-- ---------------------------------------------------------------------
 \echo ''
 \echo '====================================================='
 \echo ' ISOLAMENTO: TODAS AS VERIFICAÇÕES PASSARAM'
