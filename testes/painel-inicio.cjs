@@ -157,8 +157,10 @@ const kpis = (d) => ['kpi-leads-dia', 'kpi-ganhos-dia', 'kpi-valor-dia',
     `Essencial ${conta('Essencial Decore')} | VOLL ${conta('VOLL Pilates')} | ` +
     `Consulfarma ${conta('Consulfarma')}\n`);
   ok('HL com os 12 módulos', conta('HL Automação Residencial') === 12);
-  ok('Essencial, VOLL e Consulfarma inalteradas',
-    conta('Essencial Decore') === 5 && conta('VOLL Pilates') === 5 && conta('Consulfarma') === 6);
+  // a VOLL tem 6: o modelo de pilates ganhou Pesquisas, que é ferramenta
+  // de rotina para quem vive de renovação de aluno
+  ok('Essencial, VOLL e Consulfarma com o pacote do segmento delas',
+    conta('Essencial Decore') === 5 && conta('VOLL Pilates') === 6 && conta('Consulfarma') === 6);
   dom.window.close();
 
   console.log('\n' + '='.repeat(68));

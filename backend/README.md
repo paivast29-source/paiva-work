@@ -20,6 +20,7 @@ documento de arquitetura. Este arquivo cobre só o que fazer com a pasta.
 | `supabase/migrations/0006_pesquisas.sql` | Pesquisas, perguntas, respostas e a porta pública |
 | `supabase/migrations/0007_guardas.sql` | Verificação de cobertura de RLS e o papel `paiva_api` |
 | `supabase/migrations/0008_crm_comercial.sql` | CRM completo: listas por empresa, equipes, acesso a funil, carteira, clientes, financeiro, tarefas, indicações, parceiros e acertos |
+| `supabase/migrations/0009_pesquisas_completo.sql` | Pesquisas: seções, lógica condicional com gatilho antilaço, ações no CRM, convites com token opaco e os números do painel |
 | `testes/isolamento.sql` | 11 blocos de teste, incluindo tentativas de burlar |
 
 ---
@@ -63,6 +64,24 @@ A ordem não é detalhe. Invertida, o vendedor enxerga a carteira do
 colega e ninguém percebe até virar problema entre pessoas. Os blocos 9 e
 10 de `testes/isolamento.sql` batem nisso falando SQL direto com o
 banco, que é exatamente o que um cliente mal-intencionado faria.
+
+### A única porta aberta: a resposta de pesquisa
+
+O módulo de Pesquisas é a única parte do sistema que aceita escrita de
+quem **não tem conta**. Por isso é a de política mais estreita, e vale
+repetir o que ela **não** permite:
+
+- `anon` não tem policy de `SELECT` em `respostas` nem em `pesquisas`.
+  Quem responde não lê a própria resposta depois de enviar, nem descobre
+  que outras empresas existem.
+- O `INSERT` só passa se a pesquisa estiver publicada, dentro do prazo e
+  abaixo do limite de respostas — tudo checado na própria policy.
+- A página pública se desenha a partir da view `pesquisa_publica`, que
+  entrega título, cor e logo e mais nada.
+- O link personalizado usa `convites_pesquisa`: token opaco, de uso
+  único, resolvido por `convite_por_token()`. O `lead_id` nunca aparece
+  na URL — com id em claro, trocar um número na barra de endereço abriria
+  a ficha de outra pessoa.
 
 ### O que NÃO usar
 

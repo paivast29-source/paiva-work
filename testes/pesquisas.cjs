@@ -78,10 +78,11 @@ const erros = (d) => [...d.querySelectorAll('#constr-avisos .aviso-erro li')].ma
   // terceira pergunta, com mapeamento para o cadastro do lead
   d.querySelector('[data-tipo-novo="email"]').click();
   digitar(d, '#constr-props [data-perg-prop="enunciado"]', 'Seu e-mail, se quiser retorno');
-  digitar(d, '#constr-props [data-perg-prop="mapear_para"]', 'contato', 'change');
+  digitar(d, '#constr-props [data-perg-prop="mapear_para"]', 'email', 'change');
   ok('3 perguntas depois de acrescentar', cartoes(d).length === 3);
   ok('mapeamento mostrado no cartao',
-    cartoes(d)[2].querySelector('.mapa').textContent.includes('contato'));
+    cartoes(d)[2].querySelector('.mapa').textContent.includes('E-mail'),
+    cartoes(d)[2].querySelector('.mapa') ? cartoes(d)[2].querySelector('.mapa').textContent : 'sem chip');
 
   // -------------------------------------------------------- adicionar
   console.log('');
@@ -120,7 +121,7 @@ const erros = (d) => [...d.querySelectorAll('#constr-avisos .aviso-erro li')].ma
   // -------------------------------------------- mapeamento duplicado
   console.log('');
   cartoes(d)[3].click();
-  digitar(d, '#constr-props [data-perg-prop="mapear_para"]', 'contato', 'change');
+  digitar(d, '#constr-props [data-perg-prop="mapear_para"]', 'email', 'change');
   ok('dois campos no mesmo destino viram erro',
     erros(d).some((e) => /mesmo campo do lead/.test(e)), erros(d).join(' / '));
   digitar(d, '#constr-props [data-perg-prop="mapear_para"]', '', 'change');
@@ -147,7 +148,8 @@ const erros = (d) => [...d.querySelectorAll('#constr-avisos .aviso-erro li')].ma
   d.querySelector('#constr-publicar').click();
   ok('status virou Publicada', d.querySelector('#constr-status').textContent === 'Publicada');
   const guardado = JSON.parse(dom.window.localStorage.getItem(CHAVE_DADOS));
-  const pub = guardado.pesquisas[0];
+  // a semente ja' traz a pesquisa da VOLL: achar a desta suite pelo titulo
+  const pub = guardado.pesquisas.find((x) => x.titulo.indexOf('clientes da HL') !== -1);
   ok('codigo_publico gerado', !!pub.codigo_publico && pub.codigo_publico.length > 8);
   ok('perguntas gravadas com ordem', guardado.perguntas.filter((q) => q.pesquisa_id === pub.id).length === 4);
   ok('todo registro carrega empresa_id', guardado.pesquisas.every((p) => !!p.empresa_id));
@@ -171,7 +173,7 @@ const erros = (d) => [...d.querySelectorAll('#constr-avisos .aviso-erro li')].ma
   console.log('2. PESQUISA COM RESPOSTA COLETADA');
   console.log('='.repeat(68) + '\n');
   const dados = JSON.parse(semente);
-  const alvo = dados.pesquisas[0];
+  const alvo = dados.pesquisas.find((x) => x.titulo.indexOf('clientes da HL') !== -1);
   dados.respostas.push({ id: 'resp1', pesquisa_id: alvo.id, empresa_id: alvo.empresa_id,
     lead_id: null, enviada_em: Date.now(), concluida: true, origem: 'link', ip_hash: '', agente: '' });
   dom = abrir(JSON.stringify(dados)); d = dom.window.document;

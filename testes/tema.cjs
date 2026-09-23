@@ -144,7 +144,11 @@ const contraste = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q -
   const corte = css.indexOf(':root[data-tema="claro"]{color-scheme:light;}');
   const resto = css.slice(corte);
   const brancos = resto.match(/background:\s*#fff\b/gi) || [];
-  ok('nenhum background:#fff fixo restante', brancos.length === 0, `${brancos.length} restante(s)`);
+  // a moldura do QR code é a única exceção legítima: leitor de celular
+  // precisa de fundo branco atrás dos módulos, no claro e no escuro
+  const soQr = (resto.match(/\.qr-quadro \.moldura\{background:#fff\b/g) || []).length;
+  ok('nenhum background:#fff fixo esquecido', brancos.length === soQr && soQr === 1,
+    `${brancos.length} fixo(s), ${soQr} justificado(s)`);
   const textoBranco = (resto.match(/(?:color|stroke):\s*#fff\b/gi) || []).length;
   // 17 dos gradientes + 1 da bolha de iniciais do CRM, que tem fundo
   // colorido proprio e por isso nao segue o tema
